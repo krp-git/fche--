@@ -1,0 +1,73 @@
+import logging
+import time
+import unittest
+from functools import wraps
+
+logger = logging.getLogger(__name__)
+
+def measure_time(func):
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            elapsed = time.perf_counter() - start
+            wrapper.last_time = elapsed
+            logger.info("яункція %s виконалась за %.6f с.", func.__name__, elapsed)
+
+    wrapper.last_time = None
+    return wrapper
+
+
+class TestMeasureTime(unittest.TestCase):
+    def test_returns_original_result(self):
+        @measure_time
+        def add(a, b):
+            return a + b
+
+        self.assertEqual(add(2, 3), 5)
+
+    def test_measures_time(self):
+        @measure_time
+        def sleeper():
+            time.sleep(0.2)
+
+        sleeper()
+        self.assertGreaterEqual(sleeper.last_time, 0.2)
+        self.assertLess(sleeper.last_time, 0.5)
+
+    def test_logs_message(self):
+        @measure_time
+        def quick():
+            pass
+
+        with self.assertLogs(logger, level="INFO") as cm:
+            quick()
+        self.assertIn("quick", cm.output[0])
+
+    def test_logs_even_on_exception(self):
+        @measure_time
+        def broken():
+            raise ValueError("error")
+
+        with self.assertLogs(logger, level="INFO") as cm:
+            with self.assertRaises(ValueError):
+                broken()
+        self.assertEqual(len(cm.output), 1)
+
+    def test_preserves_function_name(self):
+        @measure_time
+        def my_func():
+            pass
+
+        self.assertEqual(my_func.__name__, "my_func")
+
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(message)s",
+    )
+    unittest.main(verbosity=2)
