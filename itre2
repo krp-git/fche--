@@ -1,0 +1,21 @@
+class Countdown:
+
+    def __init__(self, start):
+        self.start = start
+
+    def __iter__(self):
+        current = self.start
+        while current > 0:
+            yield current
+            current -= 1
+
+if __name__ == "__main__":
+    countdown = Countdown(5)
+
+    import types
+    print(isinstance(iter(countdown), types.GeneratorType))
+
+    print(list(countdown))
+    print(list(countdown))
+    for n in countdown:
+        print(n)
