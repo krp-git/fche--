@@ -1,0 +1,32 @@
+import requests
+
+class CurrencyConverter:
+
+    URL = "https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=USD&json"
+    def __init__(self):
+        self.rate = self._get_usd_rate()
+    def _get_usd_rate(self):
+        response = requests.get(self.URL, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        return data[0]["rate"]
+    def convert(self, amount_uah):
+        return amount_uah / self.rate
+
+def main():
+    try:
+        converter = CurrencyConverter()
+    except requests.RequestException as e:
+        print(f"не вдалося втримати курс валют: {e}")
+        return
+    print(f"Курс НБУ: 1 USD = {converter.rate:.4f} UAH")
+    try:
+        amount = float(input("Ведіть суму в гривнях: "))
+    except ValueError:
+        print("Помилка: потрібно ввести число.")
+        return
+    result = converter.convert(amount)
+    print(f"{amount:.2f} UAH = {result:.2f} USD")
+
+if __name__ == "__main__":
+    main()
